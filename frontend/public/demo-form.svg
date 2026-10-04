@@ -1,0 +1,198 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1130" width="100%" height="100%">
+  <defs>
+    <filter id="page-shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.08" />
+    </filter>
+    <linearGradient id="header-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+  </defs>
+
+  <!-- Page Background -->
+  <rect x="0" y="0" width="800" height="1130" fill="#ffffff" />
+  <rect x="20" y="20" width="760" height="1090" fill="none" stroke="#cbd5e1" stroke-width="1.5" />
+  <rect x="26" y="26" width="748" height="1078" fill="none" stroke="#e2e8f0" stroke-width="0.75" />
+
+  <!-- Watermark -->
+  <text x="400" y="580" font-family="Inter, sans-serif" font-size="64" font-weight="700" fill="#f8fafc" text-anchor="middle" transform="rotate(-30 400 580)" letter-spacing="8">OFFICIAL FORM 2024-25</text>
+
+  <!-- Official Header -->
+  <g transform="translate(40, 45)">
+    <!-- National Emblem icon placeholder -->
+    <circle cx="45" cy="45" r="32" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5" />
+    <path d="M45 22 L52 35 L66 37 L56 47 L58 61 L45 54 L32 61 L34 47 L24 37 L38 35 Z" fill="#475569" opacity="0.85" />
+    
+    <text x="95" y="32" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#64748b" letter-spacing="1.5">GOVERNMENT SCHOLARSHIP PORTAL</text>
+    <text x="95" y="52" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#0f172a">POST-MATRIC SCHOLARSHIP APPLICATION</text>
+    <text x="95" y="68" font-family="Inter, sans-serif" font-size="12" font-weight="500" fill="#475569">Academic Year 2024–2025 | Direct Benefit Transfer (DBT) Scheme</text>
+
+    <!-- Barcode & App Number -->
+    <g transform="translate(540, 5)">
+      <rect x="0" y="0" width="170" height="42" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1" rx="4" />
+      <text x="85" y="16" font-family="monospace" font-size="9" font-weight="600" fill="#64748b" text-anchor="middle">APP REF: SCH-2024-88492</text>
+      <!-- Barcode stripes -->
+      <line x1="20" y1="22" x2="20" y2="36" stroke="#1e293b" stroke-width="2" />
+      <line x1="25" y1="22" x2="25" y2="36" stroke="#1e293b" stroke-width="3" />
+      <line x1="32" y1="22" x2="32" y2="36" stroke="#1e293b" stroke-width="1" />
+      <line x1="36" y1="22" x2="36" y2="36" stroke="#1e293b" stroke-width="4" />
+      <line x1="44" y1="22" x2="44" y2="36" stroke="#1e293b" stroke-width="2" />
+      <line x1="50" y1="22" x2="50" y2="36" stroke="#1e293b" stroke-width="1" />
+      <line x1="55" y1="22" x2="55" y2="36" stroke="#1e293b" stroke-width="3" />
+      <line x1="62" y1="22" x2="62" y2="36" stroke="#1e293b" stroke-width="2" />
+      <line x1="68" y1="22" x2="68" y2="36" stroke="#1e293b" stroke-width="4" />
+      <line x1="76" y1="22" x2="76" y2="36" stroke="#1e293b" stroke-width="2" />
+      <line x1="82" y1="22" x2="82" y2="36" stroke="#1e293b" stroke-width="1" />
+      <line x1="88" y1="22" x2="88" y2="36" stroke="#1e293b" stroke-width="3" />
+      <line x1="96" y1="22" x2="96" y2="36" stroke="#1e293b" stroke-width="2" />
+      <line x1="102" y1="22" x2="102" y2="36" stroke="#1e293b" stroke-width="4" />
+      <line x1="110" y1="22" x2="110" y2="36" stroke="#1e293b" stroke-width="2" />
+      <line x1="116" y1="22" x2="116" y2="36" stroke="#1e293b" stroke-width="1" />
+      <line x1="122" y1="22" x2="122" y2="36" stroke="#1e293b" stroke-width="3" />
+      <line x1="130" y1="22" x2="130" y2="36" stroke="#1e293b" stroke-width="2" />
+      <line x1="136" y1="22" x2="136" y2="36" stroke="#1e293b" stroke-width="4" />
+      <line x1="144" y1="22" x2="144" y2="36" stroke="#1e293b" stroke-width="2" />
+      <line x1="150" y1="22" x2="150" y2="36" stroke="#1e293b" stroke-width="1" />
+    </g>
+  </g>
+
+  <!-- Divider line -->
+  <line x1="40" y1="140" x2="750" y2="140" stroke="#0f172a" stroke-width="2" />
+  <line x1="40" y1="144" x2="750" y2="144" stroke="#94a3b8" stroke-width="0.75" />
+
+  <!-- Instructions Banner -->
+  <rect x="40" y="152" width="710" height="26" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1" rx="3" />
+  <text x="50" y="169" font-family="Inter, sans-serif" font-size="10" font-weight="600" fill="#334155">INSTRUCTIONS: Fill all mandatory details marked with an asterisk (*). Use CAPITAL LETTERS in Black/Blue ink only.</text>
+
+  <!-- SECTION 1: PERSONAL INFORMATION -->
+  <!-- y = 19.5% -> 220px -->
+  <rect x="40" y="190" width="710" height="22" fill="#f1f5f9" />
+  <text x="50" y="206" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#1e293b">1. PERSONAL INFORMATION</text>
+
+  <!-- Field 001: Full Name -->
+  <g transform="translate(40, 220)">
+    <text x="0" y="18" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#1e293b">Full Name (as in SSC Marks) <tspan fill="#ef4444">*</tspan></text>
+    <rect x="150" y="0" width="360" height="32" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2" rx="4" />
+    <text x="162" y="21" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#334155">PRIYA RAMESH SHARMA</text>
+  </g>
+
+  <!-- Field 002: Date of Birth & Field 004: Category -->
+  <!-- y = 24.8% -> 280px -->
+  <g transform="translate(40, 280)">
+    <!-- DOB -->
+    <text x="0" y="18" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#1e293b">Date of Birth <tspan fill="#ef4444">*</tspan></text>
+    <rect x="150" y="0" width="192" height="32" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2" rx="4" />
+    <text x="162" y="21" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#334155">15 / 08 / 2004</text>
+    <text x="350" y="21" font-family="Inter, sans-serif" font-size="10" fill="#94a3b8">(DD/MM/YYYY)</text>
+
+    <!-- Category -->
+    <text x="440" y="18" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#1e293b">Category <tspan fill="#ef4444">*</tspan></text>
+    <rect x="520" y="0" width="190" height="32" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2" rx="4" />
+    <text x="532" y="21" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#334155">OBC (Non-Creamy)</text>
+  </g>
+
+  <!-- SECTION 2: FAMILY & INCOME -->
+  <!-- y = 30.5% -> 345px -->
+  <rect x="40" y="325" width="710" height="22" fill="#f1f5f9" />
+  <text x="50" y="341" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#1e293b">2. FAMILY &amp; INCOME INFORMATION</text>
+
+  <!-- Field 003: Annual Family Income -->
+  <g transform="translate(40, 355)">
+    <text x="0" y="18" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#1e293b">Annual Family Income <tspan fill="#ef4444">*</tspan></text>
+    <rect x="150" y="0" width="240" height="32" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2" rx="4" />
+    <text x="162" y="21" font-family="Inter, sans-serif" font-size="13" font-weight="600" fill="#0f172a">₹ 4,80,000</text>
+    <text x="400" y="21" font-family="Inter, sans-serif" font-size="11" fill="#64748b">(Gross yearly income from all sources)</text>
+  </g>
+
+  <!-- SECTION 3: DOMICILE & RESIDENCE -->
+  <!-- y = 36.2% -> 410px -->
+  <rect x="40" y="400" width="710" height="22" fill="#f1f5f9" />
+  <text x="50" y="416" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#1e293b">3. DOMICILE &amp; RESIDENCE INFORMATION</text>
+
+  <!-- Field 005: Domicile State -->
+  <g transform="translate(40, 430)">
+    <text x="0" y="18" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#1e293b">Domicile State <tspan fill="#ef4444">*</tspan></text>
+    <rect x="150" y="0" width="240" height="32" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2" rx="4" />
+    <text x="162" y="21" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#334155">Maharashtra</text>
+    <text x="400" y="21" font-family="Inter, sans-serif" font-size="11" fill="#64748b">(Attach valid Domicile Certificate)</text>
+  </g>
+
+  <!-- Field 006: Mobile Number & Field 007: Email Address -->
+  <!-- y = 42.0% -> 475px -->
+  <g transform="translate(40, 475)">
+    <!-- Mobile -->
+    <text x="0" y="18" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#1e293b">Mobile Number <tspan fill="#ef4444">*</tspan></text>
+    <rect x="150" y="0" width="208" height="32" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2" rx="4" />
+    <text x="162" y="21" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#334155">9820154321</text>
+
+    <!-- Email -->
+    <text x="420" y="18" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#1e293b">Email Address <tspan fill="#ef4444">*</tspan></text>
+    <rect x="520" y="0" width="230" height="32" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2" rx="4" />
+    <text x="532" y="21" font-family="Inter, sans-serif" font-size="12" font-weight="500" fill="#334155">priya.sharma@example.com</text>
+  </g>
+
+  <!-- Field 008: Permanent Address -->
+  <!-- y = 48.0% -> 542px -->
+  <g transform="translate(40, 525)">
+    <text x="0" y="18" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#1e293b">Permanent Address <tspan fill="#ef4444">*</tspan></text>
+    <rect x="150" y="0" width="544" height="46" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2" rx="4" />
+    <text x="162" y="18" font-family="Inter, sans-serif" font-size="12" font-weight="500" fill="#334155">Flat 402, Shivneri Heights, Senapati Bapat Road,</text>
+    <text x="162" y="34" font-family="Inter, sans-serif" font-size="12" font-weight="500" fill="#334155">Pune, Maharashtra - 411016</text>
+  </g>
+
+  <!-- SECTION 4: DIRECT BENEFIT TRANSFER (DBT) BANK DETAILS -->
+  <!-- y = 57.0% -> 644px -->
+  <rect x="40" y="590" width="710" height="22" fill="#f1f5f9" />
+  <text x="50" y="606" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#1e293b">4. DIRECT BENEFIT TRANSFER (DBT) BANK DETAILS</text>
+
+  <!-- Field 009: Bank Account Number & Field 010: IFSC Code -->
+  <g transform="translate(40, 625)">
+    <!-- Account Number -->
+    <text x="0" y="18" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#1e293b">Bank Account No <tspan fill="#ef4444">*</tspan></text>
+    <rect x="150" y="0" width="256" height="32" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2" rx="4" />
+    <text x="162" y="21" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#334155">9182736451029</text>
+
+    <!-- IFSC Code -->
+    <text x="440" y="18" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#1e293b">Bank IFSC Code <tspan fill="#ef4444">*</tspan></text>
+    <rect x="550" y="0" width="190" height="32" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2" rx="4" />
+    <text x="562" y="21" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#334155">SBIN0001485</text>
+  </g>
+
+  <!-- Field 011: Father's Occupation -->
+  <!-- y = 64.0% -> 723px -->
+  <g transform="translate(40, 680)">
+    <text x="0" y="18" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#1e293b">Father's Occupation</text>
+    <rect x="150" y="0" width="256" height="32" fill="#ffffff" stroke="#94a3b8" stroke-width="1.2" rx="4" />
+    <text x="162" y="21" font-family="Inter, sans-serif" font-size="13" font-weight="500" fill="#334155">Private Sector Employee</text>
+    <text x="420" y="21" font-family="Inter, sans-serif" font-size="11" fill="#94a3b8">(Optional field)</text>
+  </g>
+
+  <!-- SECTION 5: DECLARATION & SIGNATURE -->
+  <!-- y = 80.5% -> 910px -->
+  <rect x="40" y="745" width="710" height="22" fill="#f1f5f9" />
+  <text x="50" y="761" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#1e293b">5. DECLARATION &amp; UNDERTAKING</text>
+
+  <g transform="translate(40, 775)">
+    <text x="0" y="14" font-family="Inter, sans-serif" font-size="10.5" fill="#475569">I hereby declare that all the information provided above is true and complete to the best of my knowledge.</text>
+    <text x="0" y="28" font-family="Inter, sans-serif" font-size="10.5" fill="#475569">I understand that any false declaration will lead to immediate cancellation of scholarship and recovery of funds.</text>
+
+    <!-- Field 012: Signature Box -->
+    <g transform="translate(500, 45)">
+      <rect x="0" y="0" width="240" height="70" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="3 3" rx="4" />
+      <!-- Signature line graphic -->
+      <path d="M 20 45 Q 40 25 70 38 T 120 30 T 170 42 T 210 35" fill="none" stroke="#2563eb" stroke-width="1.8" />
+      <text x="120" y="62" font-family="Inter, sans-serif" font-size="9" font-weight="600" fill="#64748b" text-anchor="middle">APPLICANT SIGNATURE &amp; DATE</text>
+    </g>
+
+    <!-- Date & Place -->
+    <g transform="translate(0, 75)">
+      <text x="0" y="15" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#334155">Date: 24/10/2024</text>
+      <text x="0" y="32" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#334155">Place: Pune</text>
+    </g>
+  </g>
+
+  <!-- Official Footer -->
+  <line x1="40" y1="1040" x2="750" y2="1040" stroke="#cbd5e1" stroke-width="1" />
+  <text x="40" y="1060" font-family="Inter, sans-serif" font-size="9.5" fill="#94a3b8">FormEase Document Inspector • Page 1 of 1 • System Verified Form: NSP-PMS-2024</text>
+  <text x="750" y="1060" font-family="Inter, sans-serif" font-size="9.5" fill="#94a3b8" text-anchor="end">Confidential • For Scholarship Evaluation Only</text>
+</svg>
