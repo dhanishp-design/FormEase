@@ -5,7 +5,9 @@ import {
   Lightbulb,
   PenTool,
   ShieldAlert,
-  BookOpen
+  BookOpen,
+  FileText,
+  Tag
 } from 'lucide-react';
 import type { FormField, Language } from '../types';
 
@@ -46,6 +48,10 @@ export const FieldAssistantCard: React.FC<FieldAssistantCardProps> = ({
       ? { label: 'Medium confidence', color: 'text-amber-700 bg-amber-50 border-amber-200' }
       : { label: 'Needs verification', color: 'text-rose-700 bg-rose-50 border-rose-200' };
 
+  const documentSays = field.what_document_says || field.what_to_enter;
+  const simpleMeaning = field.what_it_means || field.explanation;
+  const userMustProvide = field.what_user_should_provide || field.what_to_enter;
+
   return (
     <div className="h-full flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       
@@ -75,7 +81,7 @@ export const FieldAssistantCard: React.FC<FieldAssistantCardProps> = ({
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs">
         
         {/* Sensitive Information Warning Banner */}
         {field.sensitive && (
@@ -90,32 +96,74 @@ export const FieldAssistantCard: React.FC<FieldAssistantCardProps> = ({
           </div>
         )}
 
-        {/* Section 1: Meaning */}
+        {/* Section 1: What the Form Says (Document Source of Truth) */}
+        {documentSays && (
+          <div className="p-3.5 rounded-xl bg-amber-50/40 border border-amber-200/70">
+            <div className="flex items-center gap-2 font-bold text-amber-950 text-xs mb-1">
+              <FileText className="w-3.5 h-3.5 text-amber-700" />
+              <span>📄 According to the Form:</span>
+            </div>
+            <p className="text-amber-900/90 italic leading-relaxed text-[12px] font-serif">
+              "{documentSays}"
+            </p>
+          </div>
+        )}
+
+        {/* Section 2: In Simple Words */}
         <div className="p-3.5 rounded-xl bg-blue-50/40 border border-blue-100/80">
           <div className="flex items-center gap-2 font-bold text-slate-900 text-xs mb-1.5">
             <Lightbulb className="w-4 h-4 text-blue-600" />
-            <span>💡 What does this mean?</span>
+            <span>💡 In Simple Words:</span>
           </div>
           <p className="text-slate-700 leading-relaxed text-[12px]">
-            {field.explanation}
+            {simpleMeaning}
           </p>
         </div>
 
-        {/* Section 2: What to enter */}
+        {/* Section 3: What to Enter */}
         <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
           <div className="flex items-center gap-2 font-bold text-slate-900 text-xs mb-1.5">
             <PenTool className="w-4 h-4 text-indigo-600" />
             <span>✏️ What should you enter?</span>
           </div>
           <p className="text-slate-700 leading-relaxed text-[12px]">
-            {field.what_to_enter}
+            {userMustProvide}
           </p>
+          
+          {field.expected_format && (
+            <div className="mt-2 text-[11px] text-slate-500 flex items-center gap-1.5">
+              <span className="font-semibold text-slate-600">Expected format:</span>
+              <span className="font-mono bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-700">
+                {field.expected_format}
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Section 3: Example */}
+        {/* Allowed options if document provides them */}
+        {field.allowed_values && field.allowed_values.length > 0 && (
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+            <div className="flex items-center gap-1.5 font-bold text-slate-700 text-[11px]">
+              <Tag className="w-3.5 h-3.5 text-blue-600" />
+              <span>Allowed options from document:</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {field.allowed_values.map((opt) => (
+                <span
+                  key={opt}
+                  className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-medium text-[11px]"
+                >
+                  {opt}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Section 4: Example */}
         {field.example && (
           <div className="p-3 rounded-xl bg-slate-100/60 border border-slate-200/60 flex items-center justify-between">
-            <span className="font-semibold text-slate-500 text-[11px]">Example:</span>
+            <span className="font-semibold text-slate-500 text-[11px]">Example from form:</span>
             <span className="font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200 text-xs">
               {field.example}
             </span>

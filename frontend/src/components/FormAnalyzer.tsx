@@ -35,6 +35,7 @@ export const FormAnalyzer: React.FC<FormAnalyzerProps> = ({
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(defaultFieldId);
   const [activeTab, setActiveTab] = useState<'assistant' | 'fields' | 'chat'>('assistant');
   const [helpFillFieldId, setHelpFillFieldId] = useState<string | null>(null);
+  const [isGuidedFillingActive, setIsGuidedFillingActive] = useState<boolean>(false);
   const [showReviewModal, setShowReviewModal] = useState<boolean>(false);
 
   const selectedField = formData.fields.find((f) => f.id === selectedFieldId) || null;
@@ -44,6 +45,12 @@ export const FormAnalyzer: React.FC<FormAnalyzerProps> = ({
   const reviewedCount = formData.fields.filter((f) => f.is_reviewed || f.user_value).length;
   const totalCount = formData.fields.length;
   const progressPct = Math.round((reviewedCount / totalCount) * 100);
+
+  // All session answers map
+  const allFormAnswers = formData.fields.reduce((acc, f) => {
+    if (f.user_value) acc[f.id] = f.user_value;
+    return acc;
+  }, {} as Record<string, any>);
 
   const handleSelectField = (fieldId: string) => {
     setSelectedFieldId(fieldId);
@@ -66,6 +73,41 @@ export const FormAnalyzer: React.FC<FormAnalyzerProps> = ({
 
   const handleUpdateValue = (fieldId: string, val: string) => {
     onUpdateField(fieldId, { user_value: val });
+  };
+
+  const handleStartGuidedFilling = () => {
+    // Find first required field that is not yet reviewed, or first required field
+    const nextField =
+      formData.fields.find((f) => f.required && !f.is_reviewed && !f.user_value) ||
+      formData.fields.find((f) => f.required) ||
+      formData.fields[0];
+
+    if (nextField) {
+      setSelectedFieldId(nextField.id);
+      setHelpFillFieldId(nextField.id);
+      setIsGuidedFillingActive(true);
+      setActiveTab('assistant');
+    }
+  };
+
+  const handleNextGuidedField = () => {
+    const currentIndex = formData.fields.findIndex((f) => f.id === helpFillFieldId);
+    // Find next required unreviewed field in natural document order
+    let nextField = formData.fields.slice(currentIndex + 1).find((f) => f.required && !f.is_reviewed);
+    if (!nextField) {
+      // Check from beginning
+      nextField = formData.fields.find((f) => f.required && !f.is_reviewed);
+    }
+
+    if (nextField) {
+      setSelectedFieldId(nextField.id);
+      setHelpFillFieldId(nextField.id);
+    } else {
+      // Completed all required fields!
+      setHelpFillFieldId(null);
+      setIsGuidedFillingActive(false);
+      setShowReviewModal(true);
+    }
   };
 
   return (
@@ -113,9 +155,18 @@ export const FormAnalyzer: React.FC<FormAnalyzerProps> = ({
             </div>
           </div>
 
-          {/* Right: Progress Tracker & Review Button */}
-          <div className="flex items-center gap-4">
+          {/* Right: Actions, Progress Tracker & Review Button */}
+          <div className="flex items-center gap-3">
             
+            {/* Start Guided Filling CTA (Section 8) */}
+            <button
+              onClick={handleStartGuidedFilling}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all cursor-pointer whitespace-nowrap"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Start Guided Filling</span>
+            </button>
+
             {/* Progress Bar Widget */}
             <div className="hidden lg:flex items-center gap-2.5 bg-slate-50 px-3.5 py-1.5 rounded-xl border border-slate-200">
               <div className="text-right">
@@ -142,7 +193,7 @@ export const FormAnalyzer: React.FC<FormAnalyzerProps> = ({
             {/* Review Form CTA */}
             <button
               onClick={() => setShowReviewModal(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs shadow-sm transition-all cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs shadow-sm transition-all cursor-pointer whitespace-nowrap"
             >
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
               <span>Review Form</span>
@@ -170,6 +221,24 @@ export const FormAnalyzer: React.FC<FormAnalyzerProps> = ({
           {/* Right Column: Assistant & Tooling (5 cols on Desktop) */}
           <div className="lg:col-span-5 h-full flex flex-col min-h-[400px]">
             
+            {/* Guided Filling Callout Banner (Section 8) */}
+            {reviewedCount < formData.required_fields_count && (
+              <div className="mb-2 p-2.5 rounded-xl bg-gradient-to-r from-blue-50/80 to-indigo-50/80 border border-blue-200 flex items-center justify-between gap-2 shrink-0">
+                <div className="flex items-center gap-2 overflow-hidden text-left">
+                  <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span className="text-[11px] text-slate-700 font-medium truncate">
+                    {formData.required_fields_count} required fields found. Ready to guide you step-by-step.
+                  </span>
+                </div>
+                <button
+                  onClick={handleStartGuidedFilling}
+                  className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold shrink-0 transition-all cursor-pointer whitespace-nowrap shadow-2xs"
+                >
+                  Start Guided Filling
+                </button>
+              </div>
+            )}
+
             {/* Tab Bar */}
             <div className="flex items-center p-1 bg-white rounded-xl border border-slate-200 mb-2 shrink-0">
               <button
@@ -215,7 +284,10 @@ export const FormAnalyzer: React.FC<FormAnalyzerProps> = ({
                 <FieldAssistantCard
                   field={selectedField}
                   language={language}
-                  onOpenHelpFill={(fId) => setHelpFillFieldId(fId)}
+                  onOpenHelpFill={(fId) => {
+                    setHelpFillFieldId(fId);
+                    setIsGuidedFillingActive(false);
+                  }}
                   onToggleReviewed={handleToggleReviewed}
                   onUpdateValue={handleUpdateValue}
                 />
@@ -243,13 +315,20 @@ export const FormAnalyzer: React.FC<FormAnalyzerProps> = ({
         </div>
       </div>
 
-      {/* Help Me Fill Modal */}
+      {/* Help Me Fill / Guided Filling Modal */}
       {helpFillField && (
         <HelpFillModal
           field={helpFillField}
           language={language}
-          onClose={() => setHelpFillFieldId(null)}
+          onClose={() => {
+            setHelpFillFieldId(null);
+            setIsGuidedFillingActive(false);
+          }}
           onApplyValue={handleApplyHelpValue}
+          onNextField={handleNextGuidedField}
+          hasNextField={Boolean(formData.fields.some((f) => f.required && !f.is_reviewed && f.id !== helpFillField.id))}
+          isGuidedMode={isGuidedFillingActive}
+          allFormAnswers={allFormAnswers}
         />
       )}
 
