@@ -36,10 +36,6 @@ class AIService:
             return self._get_demo_analysis(language=language)
 
         try:
-            # Attempt live multimodal Gemini call
-            from google import genai
-            client = genai.Client(api_key=self.api_key)
-            
             prompt = f"""
             You are FormEase, an expert AI document & form understanding assistant.
             Analyze this uploaded form image or document.
@@ -72,18 +68,52 @@ class AIService:
             Never hallucinate legal criteria. Explain fields in plain, friendly language.
             """
 
-            # Pass document to Gemini
-            content_part = {
-                "mime_type": mime_type or "image/jpeg",
-                "data": file_bytes
-            }
-            
-            response = client.models.generate_content(
-                model=self.model,
-                contents=[prompt, content_part]
-            )
+            if self.api_key.startswith("sk-or-"):
+                import openai
+                client = openai.OpenAI(
+                    base_url="https://openrouter.ai/api/v1",
+                    api_key=self.api_key,
+                )
+                
+                messages = [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt}
+                        ]
+                    }
+                ]
+                
+                if file_bytes:
+                    base64_image = base64.b64encode(file_bytes).decode('utf-8')
+                    messages[0]["content"].append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{mime_type or 'image/jpeg'};base64,{base64_image}"
+                        }
+                    })
 
-            response_text = response.text.strip()
+                response = client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                )
+                response_text = response.choices[0].message.content.strip()
+            else:
+                # Attempt live multimodal Gemini call
+                from google import genai
+                client = genai.Client(api_key=self.api_key)
+                
+                # Pass document to Gemini
+                content_part = {
+                    "mime_type": mime_type or "image/jpeg",
+                    "data": file_bytes
+                }
+                
+                response = client.models.generate_content(
+                    model=self.model,
+                    contents=[prompt, content_part]
+                )
+                response_text = response.text.strip()
             # Clean possible markdown block
             if response_text.startswith("```json"):
                 response_text = response_text[7:]
@@ -402,8 +432,6 @@ class AIService:
         # If live AI is available, ask Gemini with grounding
         if self.is_api_configured():
             try:
-                from google import genai
-                client = genai.Client(api_key=self.api_key)
                 system_context = f"""
                 You are FormEase Assistant, an empathetic, clear, and trustworthy form helper.
                 The user is filling out: {form_title or 'an official application form'}.
@@ -416,12 +444,32 @@ class AIService:
                 - Keep answers concise (2-4 sentences).
                 - Respond strictly in the requested language: {language}.
                 """
-                response = client.models.generate_content(
-                    model=self.model,
-                    contents=[system_context, f"User Question: {message}"]
-                )
+                
+                if self.api_key.startswith("sk-or-"):
+                    import openai
+                    client = openai.OpenAI(
+                        base_url="https://openrouter.ai/api/v1",
+                        api_key=self.api_key,
+                    )
+                    response = client.chat.completions.create(
+                        model=self.model,
+                        messages=[
+                            {"role": "system", "content": system_context},
+                            {"role": "user", "content": f"User Question: {message}"}
+                        ]
+                    )
+                    reply_text = response.choices[0].message.content.strip()
+                else:
+                    from google import genai
+                    client = genai.Client(api_key=self.api_key)
+                    response = client.models.generate_content(
+                        model=self.model,
+                        contents=[system_context, f"User Question: {message}"]
+                    )
+                    reply_text = response.text.strip()
+                    
                 return {
-                    "reply": response.text.strip(),
+                    "reply": reply_text,
                     "suggested_questions": [
                         "What documents are needed?",
                         "Is this field mandatory?",
