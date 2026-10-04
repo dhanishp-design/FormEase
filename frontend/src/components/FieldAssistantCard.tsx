@@ -74,7 +74,7 @@ export const FieldAssistantCard: React.FC<FieldAssistantCardProps> = ({
             </span>
           ) : (
             <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200 uppercase tracking-wide">
-              Optional
+              Requirement not specified
             </span>
           )}
         </div>
@@ -106,6 +106,17 @@ export const FieldAssistantCard: React.FC<FieldAssistantCardProps> = ({
             <p className="text-amber-900/90 italic leading-relaxed text-[12px] font-serif">
               "{documentSays}"
             </p>
+          </div>
+        )}
+
+        {/* Section 1b: Document Instruction (Part 14) */}
+        {field.document_instruction && (
+          <div className="p-3 rounded-xl bg-purple-50/60 border border-purple-200/80 text-purple-950 text-xs flex items-start gap-2">
+            <FileText className="w-4 h-4 text-purple-700 shrink-0 mt-0.5" />
+            <div className="text-[11px] leading-relaxed">
+              <span className="font-bold text-purple-900">📋 Form Instruction: </span>
+              <span>{field.document_instruction}</span>
+            </div>
           </div>
         )}
 
@@ -160,12 +171,22 @@ export const FieldAssistantCard: React.FC<FieldAssistantCardProps> = ({
           </div>
         )}
 
-        {/* Section 4: Example */}
-        {field.example && (
+        {/* Form Placeholder (Part 10) */}
+        {field.placeholder && (
+          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs flex items-center justify-between">
+            <span className="font-semibold text-slate-500 text-[11px]">🏷️ Form Placeholder:</span>
+            <span className="font-mono font-medium text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200 text-xs">
+              {field.placeholder}
+            </span>
+          </div>
+        )}
+
+        {/* Section 4: Example from Form (Part 11) */}
+        {(field.document_example || field.example) && (
           <div className="p-3 rounded-xl bg-slate-100/60 border border-slate-200/60 flex items-center justify-between">
             <span className="font-semibold text-slate-500 text-[11px]">Example from form:</span>
             <span className="font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200 text-xs">
-              {field.example}
+              {field.document_example || field.example}
             </span>
           </div>
         )}
@@ -178,15 +199,15 @@ export const FieldAssistantCard: React.FC<FieldAssistantCardProps> = ({
           </span>
         </div>
 
-        {/* Value Review / Stored value */}
+        {/* Value Review / Stored value (Part 9 & 29) */}
         <div className="pt-2 border-t border-slate-100">
           <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-            Your verified value for this field:
+            Your value:
           </label>
           <div className="flex items-center gap-2">
             <input
               type="text"
-              placeholder={field.example || "Enter or compute value..."}
+              placeholder={field.placeholder || "Enter your answer..."}
               value={field.user_value || ''}
               onChange={(e) => onUpdateValue(field.id, e.target.value)}
               className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-blue-500 font-medium"

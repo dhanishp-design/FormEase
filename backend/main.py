@@ -147,7 +147,8 @@ async def help_fill(payload: HelpFillRequest):
             current_step=payload.current_step,
             answers=payload.answers,
             all_form_answers=payload.all_form_answers,
-            language=payload.language or "en"
+            language=payload.language or "en",
+            field_info=payload.field_info
         )
         return HelpFillResponse(**fill_data)
     except Exception as e:

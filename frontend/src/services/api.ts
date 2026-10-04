@@ -66,7 +66,8 @@ export async function requestHelpFill(
   currentStep: number,
   answers: Record<string, any>,
   language: Language = 'en',
-  allFormAnswers: Record<string, any> = {}
+  allFormAnswers: Record<string, any> = {},
+  fieldInfo?: any
 ): Promise<HelpFillResponse> {
   try {
     const res = await fetch(`${API_BASE}/help-fill`, {
@@ -78,6 +79,7 @@ export async function requestHelpFill(
         answers,
         all_form_answers: allFormAnswers,
         language,
+        field_info: fieldInfo,
       }),
     });
 

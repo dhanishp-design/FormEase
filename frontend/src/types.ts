@@ -29,6 +29,13 @@ export interface FormField {
   dependencies?: any[];
   related_fields?: string[];
 
+  // Field != Value separation (Part 9, 10, 11, 13, 14)
+  raw_text?: string;
+  document_instruction?: string;
+  document_example?: string;
+  placeholder?: string;
+  document_value?: string;
+
   explanation: string;
   what_to_enter: string;
   example: string;
@@ -43,6 +50,18 @@ export interface DocumentInstruction {
   text: string;
   page: number;
   importance: 'high' | 'medium' | 'low';
+}
+
+export interface DocumentContextData {
+  title?: string;
+  pages?: number;
+  language?: string;
+  extraction_method?: string;
+  raw_text?: string;
+  normalized_text?: string;
+  instructions_detected?: string[];
+  placeholders_detected?: string[];
+  examples_detected?: string[];
 }
 
 export interface FormAnalysisData {
@@ -60,6 +79,7 @@ export interface FormAnalysisData {
   document_preview_url?: string;
   instructions?: DocumentInstruction[];
   sections?: Array<{ id: string; name: string; page: number }>;
+  document_context?: DocumentContextData;
   fields: FormField[];
 }
 
