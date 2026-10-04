@@ -3,9 +3,9 @@
 > **AI-powered form assistant that helps people understand and fill complicated forms — field by field.**
 
 [![Gemini](https://img.shields.io/badge/AI-Gemini-blueviolet)](https://ai.google.dev/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](#-license)
+[![License](https://img.shields.io/badge/License-Apache-green.svg)](#-license)
 [![Status](https://img.shields.io/badge/Status-Hackathon%20Project-orange)](#)
-[![Built With](https://img.shields.io/badge/Built%20For-Gemini%20Hackathon-blue)](#)
+[![Built With](https://img.shields.io/badge/Built%20For-Hack%20Days-blue)](#)
 
 ---
 
