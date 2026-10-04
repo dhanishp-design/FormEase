@@ -21,10 +21,21 @@ export const App: React.FC = () => {
     checkBackendHealth();
   }, []);
 
+  const [animationCompleted, setAnimationCompleted] = useState<boolean>(false);
+
+  // Automatically transition to workspace as soon as animation has reached completion AND formData is ready
+  useEffect(() => {
+    if (view === 'analyzing' && animationCompleted && formData) {
+      setView('workspace');
+    }
+  }, [view, animationCompleted, formData]);
+
   const handleLaunchDemo = async () => {
     setError(null);
     setIsDemoMode(true);
     setUploadedFile(null);
+    setFormData(null);
+    setAnimationCompleted(false);
     setView('analyzing');
 
     try {
@@ -41,6 +52,8 @@ export const App: React.FC = () => {
     setError(null);
     setIsDemoMode(false);
     setUploadedFile(file);
+    setFormData(null);
+    setAnimationCompleted(false);
     setView('analyzing');
 
     try {
@@ -67,6 +80,7 @@ export const App: React.FC = () => {
   };
 
   const handleAnalysisCompleted = () => {
+    setAnimationCompleted(true);
     if (formData) {
       setView('workspace');
     }
@@ -169,6 +183,8 @@ export const App: React.FC = () => {
         {view === 'analyzing' && (
           <AnalysisProgress
             formTitle={formData?.form_title}
+            totalFields={formData?.fields?.length || 12}
+            isDataReady={Boolean(formData)}
             onComplete={handleAnalysisCompleted}
           />
         )}

@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Loader2, Sparkles, FileSearch } from 'lucide-react';
+import { CheckCircle2, Loader2, Sparkles, FileSearch, ArrowRight } from 'lucide-react';
 
 interface AnalysisProgressProps {
   onComplete: () => void;
   formTitle?: string;
+  totalFields?: number;
+  isDataReady?: boolean;
 }
 
 export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
   onComplete,
+  formTitle,
+  totalFields = 12,
+  isDataReady = true,
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(0);
 
@@ -19,14 +24,11 @@ export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
   ];
 
   useEffect(() => {
-    // Progress sequentially through the 4 steps
-    const timer1 = setTimeout(() => setCurrentStep(1), 600);
-    const timer2 = setTimeout(() => setCurrentStep(2), 1400);
-    const timer3 = setTimeout(() => setCurrentStep(3), 2200);
-    const timer4 = setTimeout(() => {
-      setCurrentStep(4);
-      setTimeout(onComplete, 700);
-    }, 3000);
+    // Progress sequentially through the steps
+    const timer1 = setTimeout(() => setCurrentStep(1), 500);
+    const timer2 = setTimeout(() => setCurrentStep(2), 1100);
+    const timer3 = setTimeout(() => setCurrentStep(3), 1700);
+    const timer4 = setTimeout(() => setCurrentStep(4), 2300);
 
     return () => {
       clearTimeout(timer1);
@@ -34,7 +36,17 @@ export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
       clearTimeout(timer3);
       clearTimeout(timer4);
     };
-  }, [onComplete]);
+  }, []);
+
+  // When step 4 is reached and data is ready, transition into workspace automatically
+  useEffect(() => {
+    if (currentStep >= 4 && isDataReady) {
+      const redirectTimer = setTimeout(() => {
+        onComplete();
+      }, 600);
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [currentStep, isDataReady, onComplete]);
 
   return (
     <div className="max-w-md mx-auto my-12 p-8 bg-white rounded-2xl border border-slate-200 shadow-xl shadow-slate-100 text-center">
@@ -50,10 +62,10 @@ export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
       </div>
 
       <h3 className="text-xl font-extrabold text-slate-900 tracking-tight font-['Plus_Jakarta_Sans']">
-        Analyzing your form...
+        {formTitle ? formTitle : "Analyzing your form..."}
       </h3>
       <p className="text-xs text-slate-500 mt-1 mb-8">
-        Multimodal AI is scanning the document structure
+        Multimodal AI & Nemotron scanning document structure
       </p>
 
       {/* Steps List */}
@@ -100,11 +112,29 @@ export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
         })}
       </div>
 
-      {/* Completion Pill */}
+      {/* Completion & Redirection Area */}
       {currentStep >= 4 && (
-        <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 py-2.5 rounded-xl border border-emerald-200">
-          <CheckCircle2 className="w-4 h-4" />
-          <span>Form analyzed • 12 fields detected (9 required, 3 optional)</span>
+        <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col items-center gap-3">
+          {isDataReady ? (
+            <>
+              <div className="w-full flex items-center justify-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 py-2.5 px-4 rounded-xl border border-emerald-200">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>Form analyzed • {totalFields} fields detected</span>
+              </div>
+              <button
+                onClick={onComplete}
+                className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <span>Open Form Workspace</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </>
+          ) : (
+            <div className="w-full flex items-center justify-center gap-2 text-xs font-bold text-blue-700 bg-blue-50 py-2.5 px-4 rounded-xl border border-blue-200">
+              <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+              <span>Finalizing field extraction...</span>
+            </div>
+          )}
         </div>
       )}
 
