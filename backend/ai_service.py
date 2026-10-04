@@ -10,30 +10,49 @@ import httpx
 from backend.demo_data import DEMO_FORM_DATA, HELP_FILL_FLOWS
 from backend.models import FormField, BoundingBox
 
-load_dotenv()
+load_dotenv(override=True)
 
 AI_API_KEY = os.getenv("AI_API_KEY", "").strip()
-AI_MODEL = os.getenv("AI_MODEL", "gemini-2.0-flash").strip()
+AI_MODEL = os.getenv("AI_MODEL", "gemini-flash-lite-latest").strip()
 
 # NVIDIA Nemotron 3.5 Lightning Configuration
 NEMOTRON_API_KEY = os.getenv("NEMOTRON_API_KEY", os.getenv("NVIDIA_API_KEY", "")).strip()
-NEMOTRON_MODEL = os.getenv("NEMOTRON_MODEL", "nvidia/nemotron-3.5-lightning-30b-a3b").strip()
-NEMOTRON_API_BASE = os.getenv("NEMOTRON_API_BASE", "https://integrate.api.nvidia.com/v1").rstrip("/")
+NEMOTRON_MODEL = os.getenv("NEMOTRON_MODEL", "nvidia/nemotron-3.5-lightning").strip()
+NEMOTRON_API_BASE = os.getenv("NEMOTRON_API_BASE", "https://openrouter.ai/api/v1").rstrip("/")
 
 class AIService:
     def __init__(self):
-        self.api_key = AI_API_KEY
-        self.model = AI_MODEL
-        self.nemotron_api_key = NEMOTRON_API_KEY
-        self.nemotron_model = NEMOTRON_MODEL
-        self.nemotron_api_base = NEMOTRON_API_BASE
+        self._api_key = AI_API_KEY
+        self._model = AI_MODEL
+        self._nemotron_api_key = NEMOTRON_API_KEY
+        self._nemotron_model = NEMOTRON_MODEL
+        self._nemotron_api_base = NEMOTRON_API_BASE
 
-        # Smart auto-detection: if using an OpenRouter key, route to OpenRouter endpoint
-        if self.nemotron_api_key.startswith("sk-or-"):
-            if "nvidia.com" in self.nemotron_api_base:
-                self.nemotron_api_base = "https://openrouter.ai/api/v1"
-            if "30b-a3b" in self.nemotron_model or self.nemotron_model == "nvidia/nemotron-3.5-lightning-30b-a3b":
-                self.nemotron_model = "nvidia/nemotron-3.5-lightning"
+    @property
+    def api_key(self) -> str:
+        return os.getenv("AI_API_KEY", "").strip() or self._api_key
+
+    @property
+    def model(self) -> str:
+        return os.getenv("AI_MODEL", "gemini-flash-lite-latest").strip() or self._model
+
+    @property
+    def nemotron_api_key(self) -> str:
+        return os.getenv("NEMOTRON_API_KEY", os.getenv("NVIDIA_API_KEY", "")).strip() or self._nemotron_api_key
+
+    @property
+    def nemotron_model(self) -> str:
+        m = os.getenv("NEMOTRON_MODEL", "").strip() or self._nemotron_model
+        if "30b-a3b" in m:
+            return "nvidia/nemotron-3.5-lightning"
+        return m or "nvidia/nemotron-3.5-lightning"
+
+    @property
+    def nemotron_api_base(self) -> str:
+        base = os.getenv("NEMOTRON_API_BASE", "").strip().rstrip("/") or self._nemotron_api_base
+        if self.nemotron_api_key.startswith("sk-or-") and "nvidia.com" in base:
+            return "https://openrouter.ai/api/v1"
+        return base
 
     def is_gemini_configured(self) -> bool:
         return bool(self.api_key and len(self.api_key) > 5)
@@ -230,6 +249,21 @@ class AIService:
                     f["id"] = f"field_{idx+1:03d}"
                 if "bbox" not in f or not f["bbox"]:
                     f["bbox"] = {"x": 20.0, "y": 15.0 + (idx * 5.5), "width": 45.0, "height": 4.0}
+                elif isinstance(f["bbox"], dict):
+                    try:
+                        bx = float(f["bbox"].get("x", 20.0))
+                        by = float(f["bbox"].get("y", 15.0 + (idx * 5.5)))
+                        bw = float(f["bbox"].get("width", 45.0))
+                        bh = float(f["bbox"].get("height", 4.0))
+                        if bx > 100 or by > 100 or bw > 100 or bh > 100:
+                            bx, by, bw, bh = bx / 10.0, by / 10.0, bw / 10.0, bh / 10.0
+                        bx = max(0.0, min(95.0, round(bx, 2)))
+                        by = max(0.0, min(98.0, round(by, 2)))
+                        bw = max(2.0, min(100.0 - bx, round(bw, 2)))
+                        bh = max(1.5, min(100.0 - by, round(bh, 2)))
+                        f["bbox"] = {"x": bx, "y": by, "width": bw, "height": bh}
+                    except Exception:
+                        f["bbox"] = {"x": 20.0, "y": 15.0 + (idx * 5.5), "width": 45.0, "height": 4.0}
 
                 # CRITICAL: Field != Value separation
                 f["user_value"] = None
@@ -304,6 +338,14 @@ class AIService:
         """
         if not self.is_gemini_configured() or not file_bytes:
             return None
+
+        img_width, img_height = None, None
+        try:
+            from PIL import Image
+            im = Image.open(io.BytesIO(file_bytes))
+            img_width, img_height = im.size
+        except Exception:
+            pass
 
         try:
             from google import genai
@@ -395,18 +437,31 @@ class AIService:
             }}
             """
 
+            # Resolve correct image MIME type from bytes or extension
+            resolved_mime = mime_type
+            if not resolved_mime or resolved_mime in ["application/octet-stream", "binary/octet-stream", "unknown"]:
+                if file_bytes.startswith(b'\x89PNG'):
+                    resolved_mime = "image/png"
+                elif file_bytes.startswith(b'\xff\xd8\xff'):
+                    resolved_mime = "image/jpeg"
+                elif file_bytes.startswith(b'RIFF') and b'WEBP' in file_bytes[:16]:
+                    resolved_mime = "image/webp"
+                elif file_bytes.startswith(b'%PDF'):
+                    resolved_mime = "application/pdf"
+                else:
+                    resolved_mime = "image/jpeg"
+
             content_part = types.Part.from_bytes(
                 data=file_bytes,
-                mime_type=mime_type or "image/png"
+                mime_type=resolved_mime
             )
 
-            # Working candidate vision models
-            vision_models = [
-                "gemini-flash-lite-latest",
-                "gemini-3-flash-preview",
-                "gemini-3.1-flash-lite-preview",
-                "gemini-flash-latest"
-            ]
+            # Working candidate vision models, prioritizing user configured model
+            configured_model = self.model
+            vision_models = [configured_model] if configured_model else []
+            for default_m in ["gemini-flash-lite-latest", "gemini-3-flash-preview", "gemini-3.1-flash-lite-preview", "gemini-flash-latest"]:
+                if default_m not in vision_models:
+                    vision_models.append(default_m)
 
             response = None
             for m in vision_models:
@@ -426,14 +481,19 @@ class AIService:
                 return None
 
             response_text = response.text.strip()
-            if response_text.startswith("```json"):
-                response_text = response_text[7:]
-            if response_text.startswith("```"):
-                response_text = response_text[3:]
-            if response_text.endswith("```"):
-                response_text = response_text[:-3]
+            # Robust JSON boundary extraction { ... }
+            start_idx = response_text.find("{")
+            end_idx = response_text.rfind("}")
+            if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                json_str = response_text[start_idx:end_idx+1]
+            else:
+                json_str = response_text
 
-            parsed_data = json.loads(response_text.strip())
+            try:
+                parsed_data = json.loads(json_str)
+            except Exception:
+                clean_str = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', json_str)
+                parsed_data = json.loads(clean_str)
             parsed_data["is_demo"] = False
             parsed_data["language"] = language
 
@@ -452,6 +512,34 @@ class AIService:
                     f["id"] = f"field_{idx+1:03d}"
                 if "bbox" not in f or not f["bbox"]:
                     f["bbox"] = {"x": 20.0, "y": 15.0 + (idx * 4.5), "width": 50.0, "height": 3.8}
+                elif isinstance(f["bbox"], dict):
+                    try:
+                        bx = float(f["bbox"].get("x", 20.0))
+                        by = float(f["bbox"].get("y", 15.0 + (idx * 4.5)))
+                        bw = float(f["bbox"].get("width", 50.0))
+                        bh = float(f["bbox"].get("height", 3.8))
+
+                        # Normalize if coordinates are in pixel space
+                        if img_width and img_height and (bx > 1000 or by > 1000 or bx > img_width * 0.85):
+                            bx = (bx / img_width) * 100.0
+                            by = (by / img_height) * 100.0
+                            bw = (bw / img_width) * 100.0
+                            bh = (bh / img_height) * 100.0
+                        elif bx > 100 or by > 100 or bw > 100 or bh > 100:
+                            # 0-1000 standard Gemini coordinate space -> convert to 0-100%
+                            bx = bx / 10.0
+                            by = by / 10.0
+                            bw = bw / 10.0
+                            bh = bh / 10.0
+
+                        # Clamp to valid 0-100 bounds
+                        bx = max(0.0, min(95.0, round(bx, 2)))
+                        by = max(0.0, min(98.0, round(by, 2)))
+                        bw = max(2.0, min(100.0 - bx, round(bw, 2)))
+                        bh = max(1.5, min(100.0 - by, round(bh, 2)))
+                        f["bbox"] = {"x": bx, "y": by, "width": bw, "height": bh}
+                    except Exception:
+                        f["bbox"] = {"x": 20.0, "y": 15.0 + (idx * 4.5), "width": 50.0, "height": 3.8}
 
                 # CRITICAL: Field != Value separation
                 f["user_value"] = None

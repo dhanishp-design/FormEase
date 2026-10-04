@@ -58,15 +58,37 @@ async def health_check():
 @app.post("/api/analyze", response_model=FormAnalysisResponse)
 async def analyze_form(
     file: Optional[UploadFile] = File(None),
+    file_path: Optional[str] = Form(None),
     is_demo: Optional[bool] = Form(False),
     language: Optional[str] = Form("en")
 ):
     """
     Analyzes an uploaded form (PDF, JPG, PNG) using multimodal AI.
-    If is_demo is True or no file is uploaded, returns the verified scholarship application demo.
+    Supports either file upload or direct local file_path.
+    If is_demo is True or no file/file_path is provided, returns the verified scholarship application demo.
     """
     try:
-        if is_demo or not file:
+        file_bytes = None
+        filename = "unknown"
+        ext = ""
+
+        if file_path and os.path.exists(file_path):
+            filename = os.path.basename(file_path)
+            ext = os.path.splitext(filename)[1].lower()
+            with open(file_path, "rb") as f:
+                file_bytes = f.read()
+        elif file:
+            filename = file.filename or "unknown"
+            ext = os.path.splitext(filename)[1].lower()
+            file_bytes = await file.read()
+        elif is_demo:
+            data = ai_service.analyze_document(
+                file_bytes=None,
+                language=language or "en",
+                force_demo=True
+            )
+            return FormAnalysisResponse(**data)
+        else:
             data = ai_service.analyze_document(
                 file_bytes=None,
                 language=language or "en",
@@ -75,16 +97,14 @@ async def analyze_form(
             return FormAnalysisResponse(**data)
 
         # File validation
-        filename = file.filename or "unknown"
-        ext = os.path.splitext(filename)[1].lower()
-        if ext not in [".pdf", ".jpg", ".jpeg", ".png", ".webp"]:
+        valid_exts = [".pdf", ".jpg", ".jpeg", ".png", ".webp", ".jfif", ".bmp", ".tiff"]
+        if ext and ext not in valid_exts:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"This file type isn't supported ({ext}). Please upload PDF, JPG, JPEG, or PNG."
             )
 
-        file_bytes = await file.read()
-        if len(file_bytes) == 0:
+        if not file_bytes or len(file_bytes) == 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="The uploaded file is empty. Please upload a valid document."
@@ -96,7 +116,25 @@ async def analyze_form(
                 detail=f"File exceeds maximum size limit of 15MB. Please upload a compressed file."
             )
 
-        mime_type = file.content_type or ("application/pdf" if ext == ".pdf" else "image/jpeg")
+        # Infer true MIME type
+        if file_bytes.startswith(b'\x89PNG'):
+            mime_type = "image/png"
+        elif file_bytes.startswith(b'\xff\xd8\xff'):
+            mime_type = "image/jpeg"
+        elif file_bytes.startswith(b'RIFF') and b'WEBP' in file_bytes[:16]:
+            mime_type = "image/webp"
+        elif file_bytes.startswith(b'%PDF'):
+            mime_type = "application/pdf"
+        elif ext == ".pdf":
+            mime_type = "application/pdf"
+        elif ext in [".png"]:
+            mime_type = "image/png"
+        elif ext in [".webp"]:
+            mime_type = "image/webp"
+        elif file and file.content_type and file.content_type.startswith("image/"):
+            mime_type = file.content_type
+        else:
+            mime_type = "image/jpeg"
 
         analysis_result = ai_service.analyze_document(
             file_bytes=file_bytes,
@@ -105,6 +143,12 @@ async def analyze_form(
             language=language or "en",
             force_demo=False
         )
+
+        # Generate base64 data preview for image
+        if mime_type.startswith("image/") and (not analysis_result.get("document_preview_url") or analysis_result.get("document_preview_url") == "/demo-form.svg"):
+            import base64
+            b64 = base64.b64encode(file_bytes).decode("utf-8")
+            analysis_result["document_preview_url"] = f"data:{mime_type};base64,{b64}"
 
         return FormAnalysisResponse(**analysis_result)
 
@@ -119,6 +163,10 @@ async def analyze_form(
             force_demo=True
         )
         fallback_data["summary"] = f"Processed with smart recovery mode. ({str(e)[:50]})"
+        if file_bytes and mime_type and mime_type.startswith("image/"):
+            import base64
+            b64 = base64.b64encode(file_bytes).decode("utf-8")
+            fallback_data["document_preview_url"] = f"data:{mime_type};base64,{b64}"
         return FormAnalysisResponse(**fallback_data)
 
 @app.post("/api/explain", response_model=FieldExplainResponse)

@@ -133,6 +133,17 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
               const isSelected = field.id === selectedFieldId;
               const isHovered = field.id === hoveredFieldId;
 
+              // Ensure bounding box values are valid percentages (0-100)
+              const rawX = field.bbox.x > 100 ? field.bbox.x / 10 : field.bbox.x;
+              const rawY = field.bbox.y > 100 ? field.bbox.y / 10 : field.bbox.y;
+              const rawW = field.bbox.width > 100 ? field.bbox.width / 10 : field.bbox.width;
+              const rawH = field.bbox.height > 100 ? field.bbox.height / 10 : field.bbox.height;
+
+              const boxX = Math.max(0, Math.min(95, rawX));
+              const boxY = Math.max(0, Math.min(98, rawY));
+              const boxW = Math.max(2, Math.min(100 - boxX, rawW));
+              const boxH = Math.max(1.5, Math.min(100 - boxY, rawH));
+
               return (
                 <div
                   key={field.id}
@@ -150,10 +161,10 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                       : 'border border-blue-400/40 hover:border-blue-500 bg-blue-500/5 hover:bg-blue-500/15'
                   }`}
                   style={{
-                    left: `${field.bbox.x}%`,
-                    top: `${field.bbox.y}%`,
-                    width: `${field.bbox.width}%`,
-                    height: `${field.bbox.height}%`,
+                    left: `${boxX}%`,
+                    top: `${boxY}%`,
+                    width: `${boxW}%`,
+                    height: `${boxH}%`,
                   }}
                 >
                   {/* Field Badge on Active / Hover */}

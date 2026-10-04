@@ -311,6 +311,38 @@ class TestFormEaseBackend(unittest.TestCase):
         required_count = result.get("required_fields_count", 0)
         self.assertTrue(required_count < len(result["fields"]), "Form without asterisks should not mark all fields as required!")
 
+        # Check that all field bounding boxes are normalized to 0-100%
+        for field in result["fields"]:
+            if field.get("bbox"):
+                bx = field["bbox"]["x"]
+                by = field["bbox"]["y"]
+                bw = field["bbox"]["width"]
+                bh = field["bbox"]["height"]
+                self.assertGreaterEqual(bx, 0.0, f"Bbox x ({bx}) should be >= 0")
+                self.assertLessEqual(bx, 100.0, f"Bbox x ({bx}) should be <= 100")
+                self.assertGreaterEqual(by, 0.0, f"Bbox y ({by}) should be >= 0")
+                self.assertLessEqual(by, 100.0, f"Bbox y ({by}) should be <= 100")
+
+    def test_image_upload_preview_generation(self):
+        """
+        Verify that uploading a local image returns document_preview_url with valid base64 data URI.
+        """
+        import os
+        sample_path = os.path.join(os.path.dirname(__file__), "..", "tests", "sample_scholarship_form.jpeg")
+        with open(sample_path, "rb") as f:
+            file_bytes = f.read()
+
+        response = self.client.post(
+            "/api/analyze",
+            files={"file": ("sample_form.jpeg", file_bytes, "image/jpeg")},
+            data={"is_demo": "false", "language": "en"}
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIsNotNone(data.get("document_preview_url"))
+        self.assertTrue(data["document_preview_url"].startswith("data:image/jpeg;base64,"))
+        self.assertGreater(len(data.get("fields", [])), 0)
+
 if __name__ == "__main__":
     unittest.main()
 
