@@ -45,7 +45,14 @@ async def health_check():
         "status": "ok",
         "service": "FormEase API",
         "ai_configured": ai_service.is_api_configured(),
-        "model": ai_service.model
+        "nemotron_configured": ai_service.is_nemotron_configured(),
+        "gemini_configured": ai_service.is_gemini_configured(),
+        "nemotron_model": ai_service.nemotron_model,
+        "active_engine": (
+            "nemotron" if ai_service.is_nemotron_configured()
+            else "gemini" if ai_service.is_gemini_configured()
+            else "demo"
+        )
     }
 
 @app.post("/api/analyze", response_model=FormAnalysisResponse)
@@ -139,6 +146,7 @@ async def help_fill(payload: HelpFillRequest):
             field_id=payload.field_id,
             current_step=payload.current_step,
             answers=payload.answers,
+            all_form_answers=payload.all_form_answers,
             language=payload.language or "en"
         )
         return HelpFillResponse(**fill_data)
@@ -156,7 +164,8 @@ async def chat_with_form(payload: ChatRequest):
             form_title=payload.form_title,
             selected_field_id=payload.selected_field_id,
             language=payload.language or "en",
-            history=[msg.model_dump() for msg in payload.history]
+            history=[msg.model_dump() for msg in payload.history],
+            document_context=payload.document_context
         )
         return ChatResponse(**chat_data)
     except Exception as e:

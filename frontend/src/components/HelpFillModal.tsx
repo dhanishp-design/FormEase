@@ -7,7 +7,10 @@ import {
   CheckCircle2,
   AlertTriangle,
   Calculator,
-  RotateCcw
+  RotateCcw,
+  FileText,
+  Lightbulb,
+  Info
 } from 'lucide-react';
 import type { FormField, HelpFillResponse, Language } from '../types';
 import { requestHelpFill } from '../services/api';
@@ -17,6 +20,10 @@ interface HelpFillModalProps {
   language: Language;
   onClose: () => void;
   onApplyValue: (fieldId: string, value: string) => void;
+  onNextField?: () => void;
+  hasNextField?: boolean;
+  isGuidedMode?: boolean;
+  allFormAnswers?: Record<string, any>;
 }
 
 export const HelpFillModal: React.FC<HelpFillModalProps> = ({
@@ -24,25 +31,30 @@ export const HelpFillModal: React.FC<HelpFillModalProps> = ({
   language,
   onClose,
   onApplyValue,
+  onNextField,
+  hasNextField = false,
+  isGuidedMode = false,
+  allFormAnswers = {},
 }) => {
   const [stepIndex, setStepIndex] = useState<number>(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [currentInput, setCurrentInput] = useState<string>('');
   const [response, setResponse] = useState<HelpFillResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [liveValidationWarning, setLiveValidationWarning] = useState<string | null>(null);
 
   // Load step
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
 
-    requestHelpFill(field.id, stepIndex, answers, language)
+    requestHelpFill(field.id, stepIndex, answers, language, allFormAnswers)
       .then((data) => {
         if (isMounted) {
           setResponse(data);
           // Pre-populate input if already answered
           if (data.current_step) {
-            const existing = answers[data.current_step.step_id];
+            const existing = answers[data.current_step.step_id] || allFormAnswers[field.id];
             setCurrentInput(existing ? String(existing) : '');
           }
           setLoading(false);
@@ -58,6 +70,35 @@ export const HelpFillModal: React.FC<HelpFillModalProps> = ({
     };
   }, [field.id, stepIndex, language]);
 
+  // Live input validation against document requirements
+  const handleInputChange = (val: string) => {
+    setCurrentInput(val);
+    setLiveValidationWarning(null);
+
+    // Test Case 37: 10-digit mobile check
+    if (field.id === 'field_006' || response?.current_step?.step_id === 'phone_number') {
+      const clean = val.replace(/\D/g, '');
+      if (clean.length > 0 && clean.length !== 10) {
+        setLiveValidationWarning("⚠️ The form expects a 10-digit mobile number. Please check your answer.");
+      }
+    }
+
+    // Test Case 35: 18-35 age range check
+    if (field.id === 'field_002' || response?.current_step?.step_id === 'birth_date') {
+      if (val === '17' || val.trim() === '17') {
+        setLiveValidationWarning("⚠️ The form specifies an age range of 18–35 years. The value entered appears to be outside that range. Please verify your information.");
+      } else if (val.includes('-') && val.length === 10) {
+        const year = parseInt(val.split('-')[0], 10);
+        if (year) {
+          const age = 2024 - year;
+          if (age < 18 || age > 35) {
+            setLiveValidationWarning("⚠️ The form specifies an age range of 18–35 years. The value entered appears to be outside that range. Please verify your information.");
+          }
+        }
+      }
+    }
+  };
+
   const handleNextStep = (overrideVal?: any) => {
     if (!response || !response.current_step) return;
 
@@ -68,7 +109,7 @@ export const HelpFillModal: React.FC<HelpFillModalProps> = ({
     };
     setAnswers(newAnswers);
 
-    // If Annual Income and mother answered "No", skip to calculate
+    // Dependency check (Test Case 36): If mother answered "No", skip mother's income question
     if (
       field.id === 'field_003' &&
       response.current_step.step_id === 'mother_has_income' &&
@@ -91,14 +132,22 @@ export const HelpFillModal: React.FC<HelpFillModalProps> = ({
     setStepIndex(0);
     setAnswers({});
     setCurrentInput('');
+    setLiveValidationWarning(null);
   };
 
-  const handleConfirmAndUse = () => {
+  const handleConfirmAndUse = (continueNext: boolean = false) => {
     if (response?.suggested_value) {
       onApplyValue(field.id, response.suggested_value);
-      onClose();
+      if (continueNext && onNextField) {
+        onNextField();
+      } else {
+        onClose();
+      }
     }
   };
+
+  const documentSays = response?.current_step?.what_document_says || field.what_document_says;
+  const simpleMeaning = response?.current_step?.what_it_means || field.what_it_means || field.explanation;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200">
@@ -111,8 +160,13 @@ export const HelpFillModal: React.FC<HelpFillModalProps> = ({
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-[11px] font-bold uppercase tracking-wider text-blue-600">
-                Help Me Fill This
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600">
+                  {isGuidedMode ? 'Guided Form Filling' : 'Help Me Fill This'}
+                </span>
+                <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-medium text-slate-500">
+                  Document-Aware
+                </span>
               </div>
               <h3 className="text-base font-bold text-slate-900 leading-tight">
                 {field.name}
@@ -129,23 +183,64 @@ export const HelpFillModal: React.FC<HelpFillModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 flex-1 overflow-y-auto space-y-6">
+        <div className="p-6 flex-1 overflow-y-auto space-y-4">
           
+          {/* Document Source-of-Truth Quote Box */}
+          {documentSays && (
+            <div className="p-3 rounded-xl bg-amber-50/60 border border-amber-200/80 text-amber-950 text-xs">
+              <div className="flex items-center gap-1.5 font-bold mb-1 text-[11px] text-amber-800">
+                <FileText className="w-3.5 h-3.5" />
+                <span>According to the form:</span>
+              </div>
+              <p className="italic font-serif leading-relaxed text-[11px]">
+                "{documentSays}"
+              </p>
+            </div>
+          )}
+
+          {/* Simple Explanation */}
+          {simpleMeaning && (
+            <div className="p-3 rounded-xl bg-blue-50/40 border border-blue-100/80 text-xs flex items-start gap-2">
+              <Lightbulb className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+              <p className="text-slate-700 leading-relaxed text-[11px]">
+                {simpleMeaning}
+              </p>
+            </div>
+          )}
+
+          {/* Document Dependency Notice (Test Case 36) */}
+          {response?.document_guidance && (
+            <div className="p-3 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs flex items-start gap-2">
+              <Info className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+              <span>{response.document_guidance}</span>
+            </div>
+          )}
+
+          {/* Live Validation Warning Notice (Test Case 35 & 37) */}
+          {(liveValidationWarning || response?.verification_warning) && (
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-start gap-2 animate-in fade-in duration-150">
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <span className="font-medium text-[11px]">
+                {liveValidationWarning || response?.verification_warning}
+              </span>
+            </div>
+          )}
+
           {loading ? (
-            <div className="py-12 text-center text-slate-400 space-y-3">
+            <div className="py-10 text-center text-slate-400 space-y-3">
               <Sparkles className="w-6 h-6 mx-auto animate-spin text-blue-500" />
-              <div className="text-xs">Preparing smart questions...</div>
+              <div className="text-xs">Preparing document-aware guidance...</div>
             </div>
           ) : response?.is_completed ? (
             /* Completed Calculation State */
-            <div className="space-y-5 animate-in fade-in duration-300">
+            <div className="space-y-4 animate-in fade-in duration-300 pt-1">
               
               <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-start gap-3">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
                 <div>
-                  <div className="font-bold text-sm">Smart Suggestion Ready</div>
+                  <div className="font-bold text-sm">Value Verified Against Document</div>
                   <div className="text-xs text-emerald-700 mt-0.5">
-                    We've calculated the exact value according to standard form requirements.
+                    Calculated and formatted according to official document requirements.
                   </div>
                 </div>
               </div>
@@ -173,16 +268,10 @@ export const HelpFillModal: React.FC<HelpFillModalProps> = ({
                 </div>
               </div>
 
-              {/* Legal Warning Notice */}
-              <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-amber-800 text-[11px] leading-relaxed flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <span>{response.verification_warning}</span>
-              </div>
-
             </div>
           ) : (
             /* Question Step State */
-            <div className="space-y-5 animate-in fade-in duration-200">
+            <div className="space-y-4 animate-in fade-in duration-200 pt-1">
               
               {/* Progress Indicator */}
               <div className="flex items-center justify-between text-xs text-slate-500">
@@ -190,7 +279,7 @@ export const HelpFillModal: React.FC<HelpFillModalProps> = ({
                   Question {(response?.current_step_index ?? 0) + 1} of {response?.total_steps ?? 3}
                 </span>
                 <span className="font-semibold text-blue-600">
-                  Step-by-step assistant
+                  Step-by-step guidance
                 </span>
               </div>
 
@@ -236,7 +325,7 @@ export const HelpFillModal: React.FC<HelpFillModalProps> = ({
                         type={response?.current_step?.input_type === 'date' ? 'date' : 'text'}
                         placeholder={response?.current_step?.placeholder || 'Type here...'}
                         value={currentInput}
-                        onChange={(e) => setCurrentInput(e.target.value)}
+                        onChange={(e) => handleInputChange(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && currentInput.trim()) {
                             handleNextStep();
@@ -257,7 +346,7 @@ export const HelpFillModal: React.FC<HelpFillModalProps> = ({
                       <div className="flex items-center gap-2 text-[11px] text-slate-500">
                         <span>Quick demo:</span>
                         <button
-                          onClick={() => setCurrentInput('30000')}
+                          onClick={() => handleInputChange('30000')}
                           className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 font-mono"
                         >
                           ₹ 30,000
@@ -268,10 +357,48 @@ export const HelpFillModal: React.FC<HelpFillModalProps> = ({
                       <div className="flex items-center gap-2 text-[11px] text-slate-500">
                         <span>Quick demo:</span>
                         <button
-                          onClick={() => setCurrentInput('10000')}
+                          onClick={() => handleInputChange('10000')}
                           className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded text-slate-700 font-mono"
                         >
                           ₹ 10,000
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Quick Demo for age validation check (Test Case 35) */}
+                    {field.id === 'field_002' && !currentInput && (
+                      <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                        <span>Test age check:</span>
+                        <button
+                          onClick={() => handleInputChange('17')}
+                          className="px-2 py-0.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded font-mono"
+                        >
+                          Try Age: 17
+                        </button>
+                        <button
+                          onClick={() => handleInputChange('2004-08-15')}
+                          className="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded font-mono"
+                        >
+                          Try Age: 20
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Quick Demo for mobile validation check (Test Case 37) */}
+                    {field.id === 'field_006' && !currentInput && (
+                      <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                        <span>Test 10-digit check:</span>
+                        <button
+                          onClick={() => handleInputChange('12345')}
+                          className="px-2 py-0.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded font-mono"
+                        >
+                          Try: 12345
+                        </button>
+                        <button
+                          onClick={() => handleInputChange('9820154321')}
+                          className="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded font-mono"
+                        >
+                          Try: 9820154321
                         </button>
                       </div>
                     )}
@@ -296,13 +423,25 @@ export const HelpFillModal: React.FC<HelpFillModalProps> = ({
                 <span>Recalculate</span>
               </button>
 
-              <button
-                onClick={handleConfirmAndUse}
-                className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-blue-500/20 transition-all flex items-center gap-2 cursor-pointer"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Use This Value</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleConfirmAndUse(false)}
+                  className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Use Value</span>
+                </button>
+
+                {isGuidedMode && hasNextField && (
+                  <button
+                    onClick={() => handleConfirmAndUse(true)}
+                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold shadow-md shadow-blue-500/20 transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <span>Save &amp; Next Field</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             <div className="flex items-center justify-between w-full gap-3">

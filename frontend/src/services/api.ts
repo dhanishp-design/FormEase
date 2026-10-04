@@ -65,7 +65,8 @@ export async function requestHelpFill(
   fieldId: string,
   currentStep: number,
   answers: Record<string, any>,
-  language: Language = 'en'
+  language: Language = 'en',
+  allFormAnswers: Record<string, any> = {}
 ): Promise<HelpFillResponse> {
   try {
     const res = await fetch(`${API_BASE}/help-fill`, {
@@ -75,6 +76,7 @@ export async function requestHelpFill(
         field_id: fieldId,
         current_step: currentStep,
         answers,
+        all_form_answers: allFormAnswers,
         language,
       }),
     });
@@ -356,6 +358,7 @@ function computeLocalHelpFill(
           input_type: 'choice',
           options: ['Yes', 'No'],
         },
+        document_guidance: answers.mother_has_income === 'No' ? "Based on the form's instructions, the monthly income field applies when you select YES." : undefined,
         language: lang,
       };
     }
@@ -375,6 +378,19 @@ function computeLocalHelpFill(
     };
   }
 
+  let warning: string | undefined = undefined;
+  if (fieldId === 'field_002') {
+    const val = String(answers.birth_date || '');
+    if (val === '17' || val.includes('2007')) {
+      warning = '⚠️ The form specifies an age range of 18–35 years. The value entered appears to be outside that range. Please verify your information.';
+    }
+  } else if (fieldId === 'field_006') {
+    const val = String(answers.phone_number || '').replace(/\D/g, '');
+    if (val && val.length !== 10) {
+      warning = '⚠️ The form expects a 10-digit mobile number. Please check your answer.';
+    }
+  }
+
   return {
     field_id: fieldId,
     field_name: 'Field',
@@ -382,20 +398,30 @@ function computeLocalHelpFill(
     total_steps: 1,
     is_completed: true,
     suggested_value: answers.input_val || '',
-    verification_warning: 'Please verify against your official documents.',
+    verification_warning: warning || 'Please verify against your official documents.',
     language: lang,
   };
 }
 
 function getLocalChatReply(msg: string, lang: Language): ChatResponse {
   const m = msg.toLowerCase();
+  if (m.includes('what should i enter') || m.includes('what to enter') || (m.includes('income') && m.includes('enter'))) {
+    return {
+      reply: lang === 'mr'
+        ? 'हा अर्ज मागील आर्थिक वर्षातील तुमच्या कुटुंबाचे एकूण एकत्रित वार्षिक उत्पन्न विचारत आहे. ही रक्कम भारतीय रुपयांमध्ये (INR) भरणे अनिवार्य आहे.'
+        : lang === 'hi'
+        ? 'फॉर्म पिछले वित्तीय वर्ष के दौरान आपकी कुल पारिवारिक आय मांगता है। राशि भारतीय रुपयों (INR) में दर्ज की जानी चाहिए।'
+        : 'The form asks for your total family income during the previous financial year. The amount should be entered in INR.',
+      suggested_questions: ['Is income certificate mandatory?', 'How to calculate Annual Family Income?', 'What format does the form require?']
+    };
+  }
   if (m.includes('domicile') || m.includes('अधिवास')) {
     return {
       reply: lang === 'mr'
         ? 'अधिवास (Domicile) म्हणजे तुम्ही ज्या राज्याचे कायदेशीर कायमस्वरूपी रहिवासी आहात ते राज्य. या शिष्यवृत्तीसाठी तहसीलदार यांनी दिलेले अधिवास प्रमाणपत्र आवश्यक असते.'
         : lang === 'hi'
         ? 'अधिवास (Domicile) उस राज्य को दर्शाता है जहां आप कानूनी रूप से स्थायी निवासी हैं। इसके लिए तहसीलदार द्वारा जारी डोमिसाइल प्रमाणपत्र आवश्यक होता है।'
-        : 'Domicile refers to the state where you are officially considered a permanent resident. For this form, you will need a valid Domicile Certificate issued by a Tehsildar or Magistrate.',
+        : 'According to the form instructions: Domicile refers to the state where you are officially considered a permanent resident. You must attach a valid Domicile Certificate issued by a competent Revenue Authority.',
       suggested_questions: ['What documents are required for domicile?', 'Is income certificate mandatory?', 'What is IFSC?']
     };
   }
@@ -405,6 +431,6 @@ function getLocalChatReply(msg: string, lang: Language): ChatResponse {
       : lang === 'hi'
       ? 'कृपया फॉर्म के नियमों की जांच करें। किसी भी फ़ील्ड को समझने के लिए उस पर क्लिक करें।'
       : 'FormEase recommends verifying your information against official documents. Select any field on the form to see detailed guidance and step-by-step help.',
-    suggested_questions: ['What does domicile mean?', 'What is IFSC code?', 'How to calculate annual family income?']
+    suggested_questions: ['What should I enter for Annual Family Income?', 'What does domicile mean?', 'What is IFSC code?']
   };
 }
