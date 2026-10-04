@@ -59,19 +59,20 @@ export const App: React.FC = () => {
     try {
       const data = await analyzeDocument(file, false, language);
       
-      // If uploaded file is an image, set data URL preview
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setFormData({
-            ...data,
-            document_preview_url: e.target?.result as string,
-          });
-        };
-        reader.readAsDataURL(file);
-      } else {
-        setFormData(data);
+      // If uploaded file is an image, set instant local object URL preview
+      let previewUrl = data.document_preview_url;
+      const isImg = file.type.startsWith('image/') || /\.(jpe?g|png|webp|gif|bmp|jfif|tiff?)$/i.test(file.name);
+      if (isImg) {
+        try {
+          previewUrl = URL.createObjectURL(file);
+        } catch {
+          // fallback to data.document_preview_url
+        }
       }
+      setFormData({
+        ...data,
+        document_preview_url: previewUrl || data.document_preview_url,
+      });
     } catch (err: any) {
       console.error('Analysis error:', err);
       setError(err.message || 'We could not clearly read this form. Try uploading a clearer image or PDF.');

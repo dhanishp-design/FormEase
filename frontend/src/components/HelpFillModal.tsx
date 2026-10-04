@@ -48,7 +48,7 @@ export const HelpFillModal: React.FC<HelpFillModalProps> = ({
     let isMounted = true;
     setLoading(true);
 
-    requestHelpFill(field.id, stepIndex, answers, language, allFormAnswers)
+    requestHelpFill(field.id, stepIndex, answers, language, allFormAnswers, field)
       .then((data) => {
         if (isMounted) {
           setResponse(data);
@@ -74,6 +74,17 @@ export const HelpFillModal: React.FC<HelpFillModalProps> = ({
   const handleInputChange = (val: string) => {
     setCurrentInput(val);
     setLiveValidationWarning(null);
+
+    // Word limit check from document instruction (e.g. "200 words", "100 words")
+    const docIns = field.document_instruction || response?.current_step?.help_text || '';
+    const wordMatch = docIns.match(/(\d+)\s*words?/i);
+    if (wordMatch) {
+      const maxWords = parseInt(wordMatch[1], 10);
+      const wordCount = val.trim() ? val.trim().split(/\s+/).length : 0;
+      if (wordCount > maxWords) {
+        setLiveValidationWarning(`⚠️ Word limit exceeded: ${wordCount} words entered (form specifies ${maxWords}-word limit).`);
+      }
+    }
 
     // Test Case 37: 10-digit mobile check
     if (field.id === 'field_006' || response?.current_step?.step_id === 'phone_number') {
@@ -216,6 +227,27 @@ export const HelpFillModal: React.FC<HelpFillModalProps> = ({
             </div>
           )}
 
+          {/* Document Instruction (Part 14) */}
+          {field.document_instruction && (
+            <div className="p-3 rounded-xl bg-purple-50/60 border border-purple-200/80 text-purple-950 text-xs flex items-start gap-2">
+              <FileText className="w-4 h-4 text-purple-700 shrink-0 mt-0.5" />
+              <div className="text-[11px] leading-relaxed">
+                <span className="font-bold text-purple-900">Form Instruction: </span>
+                <span>{field.document_instruction}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Document Example (Part 11) */}
+          {(field.document_example || field.example_from_document) && (
+            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs flex items-center justify-between">
+              <span className="font-semibold text-slate-500 text-[11px]">Example from form:</span>
+              <span className="font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200 text-[11px]">
+                {field.document_example || field.example_from_document}
+              </span>
+            </div>
+          )}
+
           {/* Live Validation Warning Notice (Test Case 35 & 37) */}
           {(liveValidationWarning || response?.verification_warning) && (
             <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-start gap-2 animate-in fade-in duration-150">
@@ -320,26 +352,59 @@ export const HelpFillModal: React.FC<HelpFillModalProps> = ({
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <div className="relative">
-                      <input
-                        type={response?.current_step?.input_type === 'date' ? 'date' : 'text'}
-                        placeholder={response?.current_step?.placeholder || 'Type here...'}
-                        value={currentInput}
-                        onChange={(e) => handleInputChange(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && currentInput.trim()) {
-                            handleNextStep();
-                          }
-                        }}
-                        autoFocus
-                        className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-3 focus:ring-blue-100 font-medium"
-                      />
-                      {response?.current_step?.unit && (
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
-                          {response.current_step.unit}
-                        </span>
-                      )}
-                    </div>
+                    {(() => {
+                      const docIns = field.document_instruction || response?.current_step?.help_text || '';
+                      const wordMatch = docIns.match(/(\d+)\s*words?/i);
+                      const wordLimit = wordMatch ? parseInt(wordMatch[1], 10) : null;
+                      const currentWords = currentInput.trim() ? currentInput.trim().split(/\s+/).length : 0;
+                      const isLongText = wordLimit !== null && wordLimit >= 30;
+
+                      return (
+                        <>
+                          <div className="relative">
+                            {isLongText ? (
+                              <textarea
+                                rows={4}
+                                placeholder={field.placeholder || response?.current_step?.placeholder || 'Type here...'}
+                                value={currentInput}
+                                onChange={(e) => handleInputChange(e.target.value)}
+                                autoFocus
+                                className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-3 focus:ring-blue-100 font-medium resize-none leading-relaxed"
+                              />
+                            ) : (
+                              <input
+                                type={response?.current_step?.input_type === 'date' ? 'date' : 'text'}
+                                placeholder={field.placeholder || response?.current_step?.placeholder || 'Type here...'}
+                                value={currentInput}
+                                onChange={(e) => handleInputChange(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && currentInput.trim()) {
+                                    handleNextStep();
+                                  }
+                                }}
+                                autoFocus
+                                className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-3 focus:ring-blue-100 font-medium"
+                              />
+                            )}
+                            {response?.current_step?.unit && (
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
+                                {response.current_step.unit}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Word Count Live Counter (Part 26 & 30) */}
+                          {wordLimit && (
+                            <div className="flex items-center justify-between text-[11px] text-slate-500 px-1 font-mono">
+                              <span>Word Count Tracker:</span>
+                              <span className={`font-bold ${currentWords > wordLimit ? 'text-red-600' : 'text-slate-700'}`}>
+                                {currentWords} / {wordLimit} words
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
 
                     {/* Quick Demo Pre-fills for Scene 5 */}
                     {field.id === 'field_003' && stepIndex === 0 && !currentInput && (

@@ -41,10 +41,10 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
 
     // Validate type
     const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-    const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp)$/i.test(file.name);
+    const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp|jfif|bmp|tiff)$/i.test(file.name);
 
     if (!isPdf && !isImage) {
-      setErrorMessage("This file type isn't supported. Please upload PDF, JPG, JPEG, or PNG.");
+      setErrorMessage("This file type isn't supported. Please upload PDF, JPG, JPEG, PNG, or WEBP.");
       return;
     }
 
@@ -52,11 +52,16 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
 
     // Create preview if image
     if (isImage) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setFilePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const objectUrl = URL.createObjectURL(file);
+        setFilePreview(objectUrl);
+      } catch {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setFilePreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
     } else {
       setFilePreview(null);
     }
@@ -133,7 +138,7 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
         <input
           ref={inputRef}
           type="file"
-          accept=".pdf,.jpg,.jpeg,.png,.webp"
+          accept=".pdf,.jpg,.jpeg,.png,.webp,.jfif,.bmp,.tiff"
           onChange={handleChange}
           className="hidden"
           id="file-upload-input"

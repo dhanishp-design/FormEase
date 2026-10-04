@@ -12,7 +12,7 @@ class FormField(BaseModel):
     name: str
     label: Optional[str] = None
     type: str  # text, number, currency, date, phone, email, address, checkbox, radio, dropdown, signature, unknown
-    required: bool
+    required: bool = False
     page: int = 1
     section: str
     
@@ -28,6 +28,14 @@ class FormField(BaseModel):
     validation_rules: Optional[List[str]] = None
     dependencies: Optional[List[Dict[str, Any]]] = None
     related_fields: Optional[List[str]] = None
+
+    # Field != Value separation (Part 9, 10, 11, 13, 14)
+    raw_text: Optional[str] = None
+    document_instruction: Optional[str] = None
+    document_example: Optional[str] = None
+    placeholder: Optional[str] = None
+    document_value: Optional[str] = None
+    user_value: Optional[str] = None
 
     explanation: str
     what_to_enter: str
@@ -52,6 +60,7 @@ class FormAnalysisResponse(BaseModel):
     document_preview_url: Optional[str] = None
     instructions: Optional[List[Dict[str, Any]]] = None
     sections: Optional[List[Dict[str, Any]]] = None
+    document_context: Optional[Dict[str, Any]] = None  # Raw text, normalized text, extraction method (Part 6 & 17)
     fields: List[FormField]
 
 class FieldExplainRequest(BaseModel):
@@ -93,6 +102,7 @@ class HelpFillRequest(BaseModel):
     answers: Dict[str, Any] = Field(default_factory=dict)
     all_form_answers: Optional[Dict[str, Any]] = Field(default_factory=dict)
     language: str = "en"
+    field_info: Optional[Dict[str, Any]] = None
 
 class HelpFillResponse(BaseModel):
     field_id: str
