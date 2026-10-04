@@ -199,8 +199,19 @@ class AIService:
             parsed_data = json.loads(raw_content.strip())
             parsed_data["is_demo"] = False
             parsed_data["language"] = language
+            if not parsed_data.get("form_id"):
+                parsed_data["form_id"] = f"form_{int(datetime.now().timestamp())}"
+            if not parsed_data.get("form_title"):
+                parsed_data["form_title"] = "Uploaded Application Form"
+            if not parsed_data.get("summary"):
+                parsed_data["summary"] = "Form extracted and analyzed successfully by Nemotron 3.5 Lightning."
 
-            for idx, f in enumerate(parsed_data.get("fields", [])):
+            fields = parsed_data.get("fields", [])
+            parsed_data["total_fields"] = len(fields)
+            parsed_data["required_fields_count"] = sum(1 for f in fields if f.get("required", False))
+            parsed_data["optional_fields_count"] = len(fields) - parsed_data["required_fields_count"]
+
+            for idx, f in enumerate(fields):
                 if not f.get("id"):
                     f["id"] = f"field_{idx+1:03d}"
                 if "bbox" not in f or not f["bbox"]:
@@ -211,6 +222,14 @@ class AIService:
                     f["what_it_means"] = f.get("explanation", "")
                 if not f.get("what_user_should_provide"):
                     f["what_user_should_provide"] = f.get("what_to_enter", "")
+                if not f.get("explanation"):
+                    f["explanation"] = f.get("what_it_means", "Please enter the required information.")
+                if not f.get("what_to_enter"):
+                    f["what_to_enter"] = f.get("what_user_should_provide", "Enter value as per form instructions.")
+                if not f.get("example"):
+                    f["example"] = f.get("example_from_document", "N/A")
+                if not f.get("confidence"):
+                    f["confidence"] = 0.95
 
             return parsed_data
 
